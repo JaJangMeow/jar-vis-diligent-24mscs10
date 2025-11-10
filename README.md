@@ -1,12 +1,20 @@
 # J.A.R.V.I.S 
 
-**Just A Rather Very Intelligent System - Joel Lalrinhlua - MSc. Computer Science**
+**AI ASSISTANT - Joel Lalrinhlua - MSc. Computer Science**
 
 A modern, AI-powered personal assistant web application powered by a **self-hosted large language model (LLM)** that understands user queries and responds with contextually relevant information. The assistant stores and retrieves knowledge using a **vector database** for semantic search, and provides an intuitive **conversational chatbot interface** for natural language interaction.
 
 ![J.A.R.V.I.S](https://img.shields.io/badge/JARVIS-AI%20Assistant-cyan?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+
+
+<div align="center">
+  <video src="assets/working-of-jarvis.mp4" controls width="720">
+    Your browser does not support the video tag. You can <a href="assets/working-of-jarvis.mp4">download the video here</a>.
+  </video>
+</div>
+
 
 ---
 
@@ -95,10 +103,15 @@ A modern, AI-powered personal assistant web application powered by a **self-host
    - Navigate to `http://localhost:3000` (or the port shown in terminal)
 
 OR
+
+
    **You can just follow the link to use the Application online**
-   - diligent-jar-vis-joelmscs10.base44.app
+   - [https://diligent-jar-vis-joelmscs10.base44.app](https://diligent-jar-vis-joelmscs10.base44.app/)
 
 ---
+
+
+
 
 ## 📖 Usage
 
