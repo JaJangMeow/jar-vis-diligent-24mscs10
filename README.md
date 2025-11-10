@@ -11,11 +11,8 @@ A modern, AI-powered personal assistant web application powered by a **self-host
 
 <div align="center">
   <video controls width="720">
-    <source src="https://github.com/JaJangMeow/jar-vis-diligent-24mscs10/raw/main/assets/working-of-jarvis.mp4" type="video/mp4">
-    Your browser does not support the video tag. You can
-    <a href="https://raw.githubusercontent.com/JaJangMeow/jar-vis-diligent-24mscs10/main/assets/working-of-jarvis.mp4">
-      download the video here
-    </a>.
+    <source src="https://raw.githubusercontent.com/JaJangMeow/jar-vis-diligent-24mscs10/main/assets/working-of-jarvis.mp4" type="video/mp4">
+    Your browser does not support the video tag. You can <a href="https://raw.githubusercontent.com/JaJangMeow/jar-vis-diligent-24mscs10/main/assets/working-of-jarvis.mp4">download the video here</a>.
   </video>
 </div>
 
