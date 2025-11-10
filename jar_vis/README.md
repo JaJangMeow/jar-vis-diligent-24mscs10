@@ -1,5 +1,5 @@
 # J.A.R.V.I.S - Joel Lalrinhlua - MSCS10
-----> diligent-jar-vis-joelmscs10.base44.app  <-------
+----> [diligent-jar-vis-joelmscs10.base44.app](https://diligent-jar-vis-joelmscs10.base44.app/)  <-------
 
 A modern, AI-powered personal assistant web application powered by a **self-hosted large language model (LLM)** that understands user queries and responds with contextually relevant information. The assistant stores and retrieves knowledge using a **vector database** for semantic search, and provides an intuitive **conversational chatbot interface** for natural language interaction.
 
@@ -249,5 +249,6 @@ For issues, questions, or contributions, please open an issue on the GitHub repo
 ---
 
 **Made with ❤️ and AI,if ❤️ means vibecoding hehe**
+
 
 
