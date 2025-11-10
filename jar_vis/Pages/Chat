@@ -1,0 +1,336 @@
+
+import React, { useState, useEffect, useRef } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Plus, Sparkles } from "lucide-react";
+import ChatMessage from "../components/chat/ChatMessage";
+import MessageInput from "../components/chat/MessageInput";
+import TypingIndicator from "../components/chat/TypingIndicator";
+import VoiceInput from "../components/chat/VoiceInput";
+import VoiceToggle from "../components/chat/VoiceToggle";
+import ReactiveSphere from "../components/chat/ReactiveSphere";
+import ConversationActions from "../components/chat/ConversationActions";
+
+export default function Chat() {
+  const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState("");
+  const messagesEndRef = useRef(null);
+  const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me(),
+  });
+
+  useEffect(() => {
+    if (user?.voice_enabled !== undefined) {
+      setVoiceEnabled(user.voice_enabled);
+    }
+  }, [user]);
+
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Conversation.filter({ created_by: user.email }, "-updated_date");
+    },
+  });
+
+  const { data: messages = [] } = useQuery({
+    queryKey: ["messages", currentConversationId],
+    queryFn: () =>
+      currentConversationId
+        ? base44.entities.Message.filter(
+            { conversation_id: currentConversationId },
+            "created_date"
+          )
+        : Promise.resolve([]),
+    enabled: !!currentConversationId,
+  });
+
+  const { data: knowledgeBase = [] } = useQuery({
+    queryKey: ["knowledge"],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.KnowledgeBase.filter({ created_by: user.email });
+    },
+  });
+
+  const createConversationMutation = useMutation({
+    mutationFn: (data) => base44.entities.Conversation.create(data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setCurrentConversationId(data.id);
+    },
+  });
+
+  const createMessageMutation = useMutation({
+    mutationFn: (data) => base44.entities.Message.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", currentConversationId] });
+    },
+  });
+
+  const updateConversationMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Conversation.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: (data) => base44.auth.updateMe(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    },
+  });
+
+  useEffect(() => {
+    if (conversations.length > 0 && !currentConversationId) {
+      setCurrentConversationId(conversations[0].id);
+    }
+  }, [conversations, currentConversationId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
+  const speakText = (text) => {
+    if (!voiceEnabled || !("speechSynthesis" in window)) return;
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Try to use a good voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(
+      (voice) =>
+        voice.name.includes("Google") ||
+        voice.name.includes("Daniel") ||
+        voice.name.includes("Samantha")
+    );
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleToggleVoice = async () => {
+    const newValue = !voiceEnabled;
+    setVoiceEnabled(newValue);
+    await updateUserMutation.mutateAsync({ voice_enabled: newValue });
+
+    if (!newValue) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
+  const startNewConversation = async () => {
+    const conversation = await createConversationMutation.mutateAsync({
+      title: "New Conversation",
+      last_message: "",
+    });
+    setCurrentConversationId(conversation.id);
+  };
+
+  const buildStylePrompt = () => {
+    if (!user) return "";
+
+    const formality = user.formality || "neutral";
+    const verbosity = user.verbosity || "balanced";
+    const tone = user.tone || "friendly";
+
+    let styleInstructions = "\n\nCOMMUNICATION STYLE PREFERENCES:\n";
+    
+    if (formality === "formal") {
+      styleInstructions += "- Use formal, professional language with proper grammar and structure\n";
+    } else if (formality === "casual") {
+      styleInstructions += "- Use casual, conversational language as if talking to a friend\n";
+    } else {
+      styleInstructions += "- Use clear, balanced language that is neither too formal nor too casual\n";
+    }
+
+    if (verbosity === "concise") {
+      styleInstructions += "- Keep responses brief and to-the-point, avoid unnecessary details\n";
+    } else if (verbosity === "detailed") {
+      styleInstructions += "- Provide comprehensive, thorough responses with examples and explanations\n";
+    } else {
+      styleInstructions += "- Provide moderately detailed responses with key information\n";
+    }
+
+    if (tone === "friendly") {
+      styleInstructions += "- Be warm, approachable, and personable in your responses\n";
+    } else if (tone === "professional") {
+      styleInstructions += "- Be business-like, focused, and professional in your responses\n";
+    } else if (tone === "enthusiastic") {
+      styleInstructions += "- Be energetic, encouraging, and show excitement in your responses\n";
+    } else if (tone === "empathetic") {
+      styleInstructions += "- Be understanding, supportive, and show emotional awareness in your responses\n";
+    }
+
+    return styleInstructions;
+  };
+
+  const handleSendMessage = async (content) => {
+    if (!currentConversationId) {
+      await startNewConversation();
+      return;
+    }
+
+    setVoiceTranscript("");
+
+    await createMessageMutation.mutateAsync({
+      conversation_id: currentConversationId,
+      role: "user",
+      content,
+    });
+
+    setIsTyping(true);
+
+    try {
+      const knowledgeContext = knowledgeBase
+        .map((kb) => `Title: ${kb.title}\nContent: ${kb.content}`)
+        .join("\n\n");
+
+      const stylePrompt = buildStylePrompt();
+
+      const prompt = `You are J.A.R.V.I.S (Just A Rather Very Intelligent System), a helpful personal AI assistant inspired by Tony Stark's AI companion. Use the following knowledge base to answer questions when relevant:
+
+KNOWLEDGE BASE:
+${knowledgeContext}
+${stylePrompt}
+
+USER QUESTION: ${content}
+
+Provide a helpful, contextual response following the communication style preferences above. If you use information from the knowledge base, be natural about it. If the question isn't in the knowledge base, answer to the best of your general knowledge while maintaining the specified style.`;
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt,
+      });
+
+      const contextUsed = knowledgeBase
+        .filter(
+          (kb) =>
+            content.toLowerCase().includes(kb.title.toLowerCase()) ||
+            kb.tags?.some((tag) => content.toLowerCase().includes(tag.toLowerCase()))
+        )
+        .map((kb) => kb.title)
+        .slice(0, 3);
+
+      await createMessageMutation.mutateAsync({
+        conversation_id: currentConversationId,
+        role: "assistant",
+        content: response,
+        context_used: contextUsed.length > 0 ? contextUsed : undefined,
+      });
+
+      // Speak the response if voice is enabled
+      speakText(response);
+
+      if (messages.length === 0) {
+        const title = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+        await updateConversationMutation.mutateAsync({
+          id: currentConversationId,
+          data: { title, last_message: content },
+        });
+      } else {
+        await updateConversationMutation.mutateAsync({
+          id: currentConversationId,
+          data: { last_message: content },
+        });
+      }
+    } catch (error) {
+      console.error("Error getting response:", error);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleVoiceTranscriptChange = (transcript) => {
+    setVoiceTranscript(transcript);
+  };
+
+  const currentConversation = conversations.find((c) => c.id === currentConversationId);
+
+  return (
+    <div className="h-full flex flex-col bg-gradient-to-br from-black via-gray-950 to-red-950">
+      <div className="bg-black/80 backdrop-blur-sm border-b border-red-900/30 px-6 py-4">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 via-red-700 to-red-900 flex items-center justify-center shadow-lg shadow-red-500/50">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">J.A.R.V.I.S</h1>
+              <p className="text-xs text-gray-400">
+                {currentConversationId
+                  ? conversations.find((c) => c.id === currentConversationId)?.title || "Active"
+                  : "Ready"}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {currentConversation && messages.length > 0 && (
+              <ConversationActions conversation={currentConversation} messages={messages} />
+            )}
+            <Button
+              onClick={startNewConversation}
+              className="bg-gray-900 hover:bg-red-950/50 border border-red-900/30 text-gray-300 rounded-xl shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto">
+          {messages.length === 0 && !isTyping ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-20">
+              <ReactiveSphere isActive={isTyping} />
+              <h2 className="text-2xl font-bold text-white mb-2 mt-6">J.A.R.V.I.S Online</h2>
+              <p className="text-gray-400 max-w-md">
+                Your personal AI assistant ready to help
+              </p>
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <ChatMessage key={message.id} message={message} />
+              ))}
+              {isTyping && <TypingIndicator />}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="border-t border-red-900/30 bg-black/80 backdrop-blur-sm px-6 py-4">
+        <div className="max-w-4xl mx-auto flex gap-3">
+          <div className="flex-1">
+            <MessageInput 
+              onSend={handleSendMessage} 
+              disabled={isTyping}
+              voiceTranscript={voiceTranscript}
+            />
+          </div>
+          <VoiceInput
+            onTranscriptChange={handleVoiceTranscriptChange}
+            disabled={isTyping}
+          />
+          <VoiceToggle enabled={voiceEnabled} onToggle={handleToggleVoice} disabled={isTyping} />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,87 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Mic, MicOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function VoiceInput({ onTranscriptChange, disabled }) {
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      
+      recognitionInstance.continuous = true;
+      recognitionInstance.interimResults = true;
+      recognitionInstance.lang = "en-US";
+
+      recognitionInstance.onresult = (event) => {
+        let transcript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+
+        onTranscriptChange?.(transcript);
+      };
+
+      recognitionInstance.onerror = (event) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognitionInstance.onend = () => {
+        setIsListening(false);
+      };
+
+      setRecognition(recognitionInstance);
+    }
+
+    return () => {
+      if (recognition) {
+        recognition.stop();
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognition) {
+      alert("Speech recognition is not supported in your browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      onClick={toggleListening}
+      disabled={disabled || !recognition}
+      variant={isListening ? "destructive" : "outline"}
+      className={`h-[60px] px-4 rounded-xl ${
+        isListening 
+          ? "bg-red-600 hover:bg-red-700 border-red-500 animate-pulse" 
+          : "bg-gray-900 border-red-900/30 hover:bg-red-950/50 text-gray-300"
+      }`}
+    >
+      {isListening ? (
+        <motion.div
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 0.5, repeat: Infinity }}
+        >
+          <MicOff className="w-5 h-5" />
+        </motion.div>
+      ) : (
+        <Mic className="w-5 h-5" />
+      )}
+    </Button>
+  );
+}

@@ -1,0 +1,147 @@
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Download, FileText } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+export default function KnowledgeExporter({ knowledgeBase }) {
+  const handleExportText = () => {
+    const content = knowledgeBase
+      .map((item) => {
+        const tags = item.tags?.length ? `Tags: ${item.tags.join(", ")}` : "";
+        return `Title: ${item.title}\nCategory: ${item.category}\n${tags}\nCreated: ${new Date(
+          item.created_date
+        ).toLocaleString()}\n\n${item.content}\n${"=".repeat(60)}\n`;
+      })
+      .join("\n");
+
+    const header = `J.A.R.V.I.S Knowledge Base Export\nExported: ${new Date().toLocaleString()}\nTotal Entries: ${
+      knowledgeBase.length
+    }\n${"=".repeat(60)}\n\n`;
+    const fullText = header + content;
+
+    const blob = new Blob([fullText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `jarvis-knowledge-base-${Date.now()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportJSON = () => {
+    const exportData = knowledgeBase.map((item) => ({
+      title: item.title,
+      content: item.content,
+      category: item.category,
+      tags: item.tags,
+      created_date: item.created_date,
+    }));
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `jarvis-knowledge-base-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportHTML = () => {
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>J.A.R.V.I.S Knowledge Base</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; background: #f5f5f5; }
+    h1 { color: #06b6d4; border-bottom: 3px solid #06b6d4; padding-bottom: 10px; }
+    .meta { color: #666; font-size: 14px; margin-bottom: 30px; }
+    .entry { background: white; margin-bottom: 20px; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .entry-title { color: #06b6d4; font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+    .entry-meta { color: #666; font-size: 12px; margin-bottom: 15px; }
+    .entry-content { color: #333; white-space: pre-wrap; }
+    .tag { display: inline-block; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <h1>J.A.R.V.I.S Knowledge Base</h1>
+  <div class="meta">
+    <strong>Exported:</strong> ${new Date().toLocaleString()}<br>
+    <strong>Total Entries:</strong> ${knowledgeBase.length}
+  </div>
+  ${knowledgeBase
+    .map(
+      (item) => `
+    <div class="entry">
+      <div class="entry-title">${item.title}</div>
+      <div class="entry-meta">
+        <strong>Category:</strong> ${item.category} | 
+        <strong>Created:</strong> ${new Date(item.created_date).toLocaleString()}
+        ${
+          item.tags?.length
+            ? `<br><div style="margin-top: 5px;">${item.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>`
+            : ""
+        }
+      </div>
+      <div class="entry-content">${item.content}</div>
+    </div>
+  `
+    )
+    .join("")}
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `jarvis-knowledge-base-${Date.now()}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  if (!knowledgeBase || knowledgeBase.length === 0) {
+    return null;
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          className="bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-300"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export Knowledge Base
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white">
+        <DropdownMenuItem onClick={handleExportText} className="hover:bg-gray-700 cursor-pointer">
+          <FileText className="w-4 h-4 mr-2" />
+          Export as Text
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleExportJSON} className="hover:bg-gray-700 cursor-pointer">
+          <FileText className="w-4 h-4 mr-2" />
+          Export as JSON
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleExportHTML} className="hover:bg-gray-700 cursor-pointer">
+          <Download className="w-4 h-4 mr-2" />
+          Export as HTML
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

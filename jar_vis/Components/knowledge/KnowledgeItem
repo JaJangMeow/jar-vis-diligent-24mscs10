@@ -1,0 +1,190 @@
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical, FileText, Download, Sparkles, Loader2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+export default function ConversationActions({ conversation, messages }) {
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [showSummary, setShowSummary] = useState(false);
+
+  const handleSummarize = async () => {
+    setIsSummarizing(true);
+    setShowSummary(true);
+
+    try {
+      const conversationText = messages
+        .map((m) => `${m.role === "user" ? "User" : "J.A.R.V.I.S"}: ${m.content}`)
+        .join("\n\n");
+
+      const summaryText = await base44.integrations.Core.InvokeLLM({
+        prompt: `Summarize the following conversation between a user and J.A.R.V.I.S (an AI assistant). Provide a concise summary of the main topics discussed, questions asked, and key points:
+
+${conversationText}
+
+Provide a clear, well-structured summary in 3-5 paragraphs.`,
+      });
+
+      setSummary(summaryText);
+    } catch (error) {
+      console.error("Error summarizing:", error);
+      setSummary("Failed to generate summary. Please try again.");
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const handleExportText = () => {
+    const conversationText = messages
+      .map(
+        (m) =>
+          `[${new Date(m.created_date).toLocaleString()}] ${
+            m.role === "user" ? "User" : "J.A.R.V.I.S"
+          }:\n${m.content}\n`
+      )
+      .join("\n");
+
+    const header = `J.A.R.V.I.S Conversation: ${conversation.title}\nExported: ${new Date().toLocaleString()}\n${"=".repeat(60)}\n\n`;
+    const fullText = header + conversationText;
+
+    const blob = new Blob([fullText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `jarvis-conversation-${Date.now()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = async () => {
+    const conversationText = messages
+      .map(
+        (m) =>
+          `[${new Date(m.created_date).toLocaleString()}] ${
+            m.role === "user" ? "User" : "J.A.R.V.I.S"
+          }:\n${m.content}\n`
+      )
+      .join("\n\n");
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
+    h1 { color: #06b6d4; border-bottom: 2px solid #06b6d4; padding-bottom: 10px; }
+    .meta { color: #666; font-size: 14px; margin-bottom: 30px; }
+    .message { margin-bottom: 20px; padding: 15px; border-radius: 8px; }
+    .user { background-color: #e0f2fe; }
+    .assistant { background-color: #f3f4f6; }
+    .timestamp { color: #666; font-size: 12px; }
+    .role { font-weight: bold; margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <h1>J.A.R.V.I.S Conversation: ${conversation.title}</h1>
+  <div class="meta">Exported: ${new Date().toLocaleString()}</div>
+  ${messages
+    .map(
+      (m) => `
+    <div class="message ${m.role}">
+      <div class="role">${m.role === "user" ? "User" : "J.A.R.V.I.S"}</div>
+      <div class="timestamp">${new Date(m.created_date).toLocaleString()}</div>
+      <div>${m.content.replace(/\n/g, "<br>")}</div>
+    </div>
+  `
+    )
+    .join("")}
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `jarvis-conversation-${Date.now()}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-300"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white">
+          <DropdownMenuItem
+            onClick={handleSummarize}
+            className="hover:bg-gray-700 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Summarize Conversation
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuItem
+            onClick={handleExportText}
+            className="hover:bg-gray-700 cursor-pointer"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Export as Text
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={handleExportPDF}
+            className="hover:bg-gray-700 cursor-pointer"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export as HTML
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={showSummary} onOpenChange={setShowSummary}>
+        <DialogContent className="max-w-2xl bg-gray-800 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-cyan-400" />
+              Conversation Summary
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {isSummarizing ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mb-4" />
+                <p className="text-gray-400">Generating summary...</p>
+              </div>
+            ) : (
+              <div className="prose prose-sm prose-invert max-w-none">
+                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{summary}</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

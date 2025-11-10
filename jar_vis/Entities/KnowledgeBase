@@ -1,0 +1,38 @@
+{
+  "name": "KnowledgeBase",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the knowledge entry"
+    },
+    "content": {
+      "type": "string",
+      "description": "The actual knowledge/information"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "personal",
+        "work",
+        "reference",
+        "notes",
+        "documents",
+        "other"
+      ],
+      "default": "notes",
+      "description": "Category of knowledge"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for easy searching"
+    }
+  },
+  "required": [
+    "title",
+    "content"
+  ]
+}
