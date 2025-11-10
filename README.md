@@ -1,6 +1,6 @@
-# J.A.R.V.I.S
+# J.A.R.V.I.S 
 
-**Just A Rather Very Intelligent System**
+**Just A Rather Very Intelligent System - Joel Lalrinhlua - MSc. Computer Science**
 
 A modern, AI-powered personal assistant web application powered by a **self-hosted large language model (LLM)** that understands user queries and responds with contextually relevant information. The assistant stores and retrieves knowledge using a **vector database** for semantic search, and provides an intuitive **conversational chatbot interface** for natural language interaction.
 
@@ -93,6 +93,10 @@ A modern, AI-powered personal assistant web application powered by a **self-host
 
 5. **Open your browser**
    - Navigate to `http://localhost:3000` (or the port shown in terminal)
+
+OR
+   **You can just follow the link to use the Application online**
+   - diligent-jar-vis-joelmscs10.base44.app
 
 ---
 
