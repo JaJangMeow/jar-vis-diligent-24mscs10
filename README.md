@@ -10,11 +10,13 @@ A modern, AI-powered personal assistant web application powered by a **self-host
 
 
 <div align="center">
-  <video src="assets/working-of-jarvis.mp4" controls width="720">
-    Your browser does not support the video tag. You can <a href="assets/working-of-jarvis.mp4">download the video here</a>.
+  <video controls width="720" src="https://github.com/joelmscs10/jar-vis-diligent-24mscs10/raw/main/assets/working-of-jarvis.mp4">
+    Your browser does not support the video tag. You can
+    <a href="https://github.com/joelmscs10/jar-vis-diligent-24mscs10/raw/main/assets/working-of-jarvis.mp4">
+      download the video here
+    </a>.
   </video>
 </div>
-
 
 ---
 
